@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Test Markdown Styles</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            overflow: auto;
+        }
+
+        .chat-panel {
+            height: auto;
+            overflow: visible;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-shell" style="height: auto; min-height: 100vh;">
+        <header class="topbar">
+            <div class="brand-wrap">
+                <div class="brand-copy">
+                    <h1>Markdown Style Test</h1>
+                </div>
+            </div>
+        </header>
+
+        <section id="chatPanel" class="chat-panel">
+            <!-- Template for messages -->
+        </section>
+    </div>
+
+    <template id="messageTemplate">
+        <article class="msg">
+            <div class="avatar"></div>
+            <div class="bubble"></div>
+        </article>
+    </template>
+
+    <script>
+        const panel = document.getElementById("chatPanel");
+        const tpl = document.getElementById("messageTemplate");
+
+        function addMessage(role, text) {
+            const fragment = tpl.content.cloneNode(true);
+            const msgEl = fragment.querySelector(".msg");
+            const bubbleEl = fragment.querySelector(".bubble");
+
+            msgEl.classList.add(role);
+
+            if (role === 'assistant') {
+                bubbleEl.innerHTML = marked.parse(text);
+            } else {
+                bubbleEl.textContent = text;
+            }
+
+            panel.appendChild(fragment);
+        }
+
+        // specific Markdown test cases
+        const markdownSample = `
+# Heading 1
+## Heading 2
+### Heading 3
+
+This is a paragraph with **bold text**, *italic text*, and a [link](https://example.com).
+
+- List item 1
+- List item 2
+  - Nested item
+
+1. Ordered item 1
+2. Ordered item 2
+
+> This is a blockquote.
+
+\`\`\`javascript
+function hello() {
+  console.log("Hello World");
+}
+\`\`\`
+
+Inline \`code\` snippet.
+    `;
+
+        addMessage("user", "Show me some markdown examples.");
+        addMessage("assistant", markdownSample);
+        addMessage("assistant", "Here is a table (if supported):\n\n| Header 1 | Header 2 |\n| --- | --- |\n| Cell 1 | Cell 2 |");
+    </script>
+</body>
+
+</html>

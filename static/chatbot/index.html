@@ -1,0 +1,85 @@
+﻿<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Assistant Documentaire Franprix</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/static/chatbot/styles.css" />
+</head>
+
+<body>
+  <div class="noise-layer" aria-hidden="true"></div>
+  <div class="bg-shape shape-a" aria-hidden="true"></div>
+  <div class="bg-shape shape-b" aria-hidden="true"></div>
+
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand-wrap">
+        <div class="brand-logo-wrap">
+          <img src="/static/chatbot/franprix.png" alt="Logo Franprix" class="brand-logo" />
+        </div>
+        <div class="brand-copy">
+          <span class="brand-eyebrow">Assistant IA interne</span>
+          <h1>Assistant Documentaire</h1>
+          <p>Réponses fiables basées sur votre base PDF</p>
+        </div>
+      </div>
+
+      <div class="status-wrap">
+        <span id="apiStatus" class="status-pill">Connexion en cours</span>
+        <button id="reindexBtn" class="reindex-btn" type="button">Réindexer la base</button>
+      </div>
+    </header>
+
+    <section class="meta-grid">
+      <article class="meta-card">
+        <p class="meta-label">Base documentaire</p>
+        <p id="pdfCount" class="meta-value">Chargement...</p>
+      </article>
+      <article class="meta-card">
+        <p class="meta-label">Dernière mise à jour</p>
+        <p id="lastUpdate" class="meta-value">Chargement...</p>
+      </article>
+    </section>
+
+    <section id="chatPanel" class="chat-panel" aria-live="polite"></section>
+
+    <section class="composer-panel">
+      <div class="quick-actions">
+        <button class="chip" data-prompt="Quels sont les points de vigilance IAGen à connaître ?"
+          type="button">Points de vigilance IAGen</button>
+        <button class="chip" data-prompt="Quels sont les points forts IAGen mentionnés dans les documents ?"
+          type="button">Points forts IAGen</button>
+        <button class="chip" data-prompt="Quelles sont les stratégies fondamentales de prompting ?"
+          type="button">Stratégies de prompt</button>
+      </div>
+
+      <form id="chatForm" class="composer" autocomplete="off">
+        <label for="userInput" class="sr-only">Votre message</label>
+        <textarea id="userInput" rows="1" maxlength="3000" placeholder="Posez votre question..."></textarea>
+        <button id="sendBtn" type="submit">Envoyer</button>
+      </form>
+
+      <p class="helper">L'assistant répond exclusivement à partir des documents indexés.</p>
+    </section>
+  </main>
+
+  <template id="messageTemplate">
+    <article class="msg">
+      <div class="avatar"></div>
+      <div class="bubble"></div>
+    </article>
+  </template>
+
+  <!-- Markdown Parser -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+  <script src="/static/chatbot/app.js" defer></script>
+</body>
+
+</html>

@@ -1,0 +1,23 @@
+# venv
+.venv/
+
+# local env / secrets
+.env
+
+# certificates
+.certs/
+cert.pem
+.gradio/
+
+# chroma persistence
+chroma_db/
+
+# gradio sqlite files (file + its shm/wal)
+gradio_sessions.sqlite
+gradio_sessions.sqlite-shm
+gradio_sessions.sqlite-wal
+
+Database/
+__pycache__/
+
+runtime/

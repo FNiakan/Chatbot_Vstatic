@@ -1,0 +1,12 @@
+.git
+.gitignore
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.gradio
+runtime
+chroma_db
+notebooks
+uv.lock
