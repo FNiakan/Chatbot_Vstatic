@@ -9,6 +9,9 @@ from datetime import datetime
 from typing import Any
 
 from dotenv import load_dotenv
+
+# Load env vars before checking for Langfuse keys
+load_dotenv(override=True)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -22,7 +25,14 @@ from agents import (
     set_default_openai_client,
     set_tracing_disabled,
 )
-from openai import AsyncAzureOpenAI
+# Conditional Langfuse Import
+if os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY"):
+    try:
+        from langfuse.openai import AsyncAzureOpenAI
+    except ImportError:
+        from openai import AsyncAzureOpenAI
+else:
+    from openai import AsyncAzureOpenAI
 
 from context import chat_instruction, sys_instruction, user_instruction
 from tool import (
@@ -67,7 +77,8 @@ os.environ["OPENAI_AGENTS_DISABLE_TRACING"] = "1"
 
 
 #  Env / model client 
-load_dotenv(override=True)
+#  Env / model client 
+# load_dotenv(override=True)  # Moved to top
 
 AZURE_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "").strip()
 AZURE_KEY = os.getenv("AZURE_OPENAI_API_KEY", "").strip()
