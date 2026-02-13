@@ -3,6 +3,7 @@
 Ce projet est un chatbot documentaire qui répond aux questions **uniquement à partir de fichiers PDF**.
 
 Le backend utilise :
+
 - `FastAPI` pour l'API
 - `LangChain + Chroma` pour l'indexation vectorielle (RAG)
 - `Azure OpenAI` pour les embeddings et la génération de réponses
@@ -26,6 +27,7 @@ Placez vos documents PDF dans :
 `Database/`
 
 Exemples :
+
 - `Database/guide-procedure.pdf`
 - `Database/RH/politique-conges.pdf`
 
@@ -44,15 +46,18 @@ Si le sujet n'existe pas dans les PDF indexés, l'assistant renvoie un message d
 ## Variables d'environnement (`.env`)
 
 Variables minimales côté chat :
+
 - `AZURE_OPENAI_ENDPOINT`
 - `AZURE_OPENAI_API_KEY`
 
 Variables embeddings (indexation RAG) :
+
 - `AZURE_OPENAI_EMBED_ENDPOINT`
 - `AZURE_OPENAI_EMBED_API_KEY`
 - `AZURE_OPENAI_DEPLOYMENT_EMBED`
 
 Variables optionnelles :
+
 - `AZURE_OPENAI_API_VERSION` (défaut : `2025-01-01-preview`)
 - `AZURE_OPENAI_DEPLOYMENT_CHAT` (défaut : `gpt-5-mini`)
 - `AZURE_OPENAI_DEPLOYMENT_QA` (par défaut identique au chat)
@@ -88,6 +93,7 @@ Le frontend utilisé est dans :
 `static/chatbot/`
 
 Fichiers principaux :
+
 - `static/chatbot/index.html`
 - `static/chatbot/app.js`
 - `static/chatbot/styles.css`
@@ -101,6 +107,6 @@ Une image Docker peut être construite via le `Dockerfile` fourni.
 Exemple :
 
 ```bash
-docker build -t chatbot-pdf .
-docker run --env-file .env -p 8000:8000 chatbot-pdf
+docker build -t chatbot-document .
+docker run --env-file .env -p 8000:8000 chatbot-document
 ```
