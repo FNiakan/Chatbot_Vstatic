@@ -48,7 +48,7 @@ MANIFEST_PATH = (CHROMA_DIR / "manifest.json").resolve()
 STATE_DIR = (APP_DIR / "runtime").resolve()
 STATE_DIR.mkdir(parents=True, exist_ok=True)
 
-DB_PATH = str((STATE_DIR / "gradio_sessions.sqlite").resolve())
+DB_PATH = str((STATE_DIR / "sessions.sqlite").resolve())
 
 SOURCE_DIR.mkdir(parents=True, exist_ok=True)
 CHROMA_DIR.mkdir(parents=True, exist_ok=True)
