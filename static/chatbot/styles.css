@@ -763,7 +763,7 @@ body {
   background: rgba(30, 41, 59, 0.5);
 }
 
-/* ---------- Copy Button (ChatGPT-style) ---------- */
+/* ---------- Action Buttons (ChatGPT-style) ---------- */
 .msg-actions {
   display: flex;
   gap: 4px;
@@ -777,35 +777,7 @@ body {
   opacity: 1;
 }
 
-.copy-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.copy-btn:hover {
-  color: var(--text-primary);
-  background: var(--surface);
-}
-
-.copy-btn.copied {
-  color: var(--success);
-}
-
-.copy-btn svg {
-  width: 15px;
-  height: 15px;
-}
-
+.copy-btn,
 .retry-btn {
   display: inline-flex;
   align-items: center;
@@ -821,11 +793,17 @@ body {
   transition: all var(--transition-fast);
 }
 
+.copy-btn:hover,
 .retry-btn:hover {
   color: var(--text-primary);
   background: var(--surface);
 }
 
+.copy-btn.copied {
+  color: var(--success);
+}
+
+.copy-btn svg,
 .retry-btn svg {
   width: 15px;
   height: 15px;

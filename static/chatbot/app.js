@@ -392,6 +392,7 @@ async function retryAnswer(assistantMsgEl) {
 function startNewChat() {
   state.sessionId = null;
   state.chatStarted = false;
+  state.lastUserPrompt = null;
 
   // Clear all messages
   const msgs = els.panelInner.querySelectorAll(".msg");
@@ -424,7 +425,7 @@ function bindEvents() {
     }
   });
 
-  // Suggestion cards (chips replacement)
+  // Suggestion cards
   document.querySelectorAll(".suggestion-card").forEach((card) => {
     card.addEventListener("click", () => {
       const prompt = card.dataset.prompt || "";
