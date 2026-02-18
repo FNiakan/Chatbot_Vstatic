@@ -2,19 +2,30 @@
   sessionId: null,
   pendingTypingId: null,
   loading: false,
+  chatStarted: false,
+  lastUserPrompt: null,
 };
 
 const els = {
   panel: document.getElementById("chatPanel"),
+  panelInner: document.querySelector(".chat-panel-inner"),
   form: document.getElementById("chatForm"),
   input: document.getElementById("userInput"),
   sendBtn: document.getElementById("sendBtn"),
   status: document.getElementById("apiStatus"),
+  statusDot: document.getElementById("statusDot"),
   pdfCount: document.getElementById("pdfCount"),
   lastUpdate: document.getElementById("lastUpdate"),
   reindexBtn: document.getElementById("reindexBtn"),
   tpl: document.getElementById("messageTemplate"),
+  emptyState: document.getElementById("emptyState"),
+  sidebar: document.getElementById("sidebar"),
+  sidebarOverlay: document.getElementById("sidebarOverlay"),
+  menuBtn: document.getElementById("menuBtn"),
+  newChatBtn: document.getElementById("newChatBtn"),
 };
+
+/* ---------- Helpers ---------- */
 
 function autoResizeInput() {
   els.input.style.height = "auto";
@@ -61,14 +72,12 @@ async function copyTextToClipboard(text) {
 function parseAndCleanText(text) {
   if (!text) return "";
 
-  // Clean up excessive spaces and line breaks
   let cleaned = text
-    .replace(/\r\n/g, "\n") // Normalize line endings
-    .replace(/\n{3,}/g, "\n\n") // Max 2 consecutive line breaks
-    .replace(/ {2,}/g, " ") // Replace multiple spaces with single space
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/ {2,}/g, " ")
     .trim();
 
-  // Parse markdown if marked library is available
   if (typeof marked !== "undefined") {
     try {
       return marked.parse(cleaned, {
@@ -83,46 +92,114 @@ function parseAndCleanText(text) {
     }
   }
 
-  // Fallback: convert line breaks to <br>
   return cleaned.replace(/\n/g, "<br>");
 }
 
-function ensureCopyButton(msgEl, text) {
+/* ---------- Sidebar ---------- */
+
+function openSidebar() {
+  els.sidebar.classList.add("open");
+  els.sidebarOverlay.classList.add("active");
+}
+
+function closeSidebar() {
+  els.sidebar.classList.remove("open");
+  els.sidebarOverlay.classList.remove("active");
+}
+
+/* ---------- Empty State ---------- */
+
+function hideEmptyState() {
+  if (!state.chatStarted && els.emptyState) {
+    els.emptyState.classList.add("hidden");
+    state.chatStarted = true;
+  }
+}
+
+function showEmptyState() {
+  if (els.emptyState) {
+    els.emptyState.classList.remove("hidden");
+    state.chatStarted = false;
+  }
+}
+
+/* ---------- Messages ---------- */
+
+const COPY_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+const CHECK_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+const RETRY_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>';
+
+function ensureActionButtons(msgEl, text) {
   if (!msgEl.classList.contains("assistant")) return;
 
   const content = (text || "").trim();
-  const existing = msgEl.querySelector(".copy-btn");
+  let actions = msgEl.querySelector(".msg-actions");
   if (!content) {
-    if (existing) existing.remove();
+    if (actions) actions.remove();
     return;
   }
 
-  const btn = existing || document.createElement("button");
-  btn.type = "button";
-  btn.className = "copy-btn";
-  btn.textContent = "Copier";
-
-  if (!existing) {
-    msgEl.appendChild(btn);
+  if (!actions) {
+    actions = document.createElement("div");
+    actions.className = "msg-actions";
+    msgEl.appendChild(actions);
   }
 
-  btn.onclick = async () => {
+  // Copy button
+  let copyBtn = actions.querySelector(".copy-btn");
+  if (!copyBtn) {
+    copyBtn = document.createElement("button");
+    copyBtn.type = "button";
+    copyBtn.className = "copy-btn";
+    copyBtn.title = "Copier";
+    copyBtn.innerHTML = COPY_ICON_SVG;
+    actions.appendChild(copyBtn);
+  }
+
+  copyBtn.onclick = async () => {
     const copied = await copyTextToClipboard(content);
-    const old = btn.textContent;
-    btn.textContent = copied ? "Copié" : "Échec";
+    copyBtn.innerHTML = copied ? CHECK_ICON_SVG : COPY_ICON_SVG;
+    if (copied) copyBtn.classList.add("copied");
     setTimeout(() => {
-      btn.textContent = old;
-    }, 1200);
+      copyBtn.innerHTML = COPY_ICON_SVG;
+      copyBtn.classList.remove("copied");
+    }, 1500);
+  };
+
+  // Retry button
+  let retryBtn = actions.querySelector(".retry-btn");
+  if (!retryBtn) {
+    retryBtn = document.createElement("button");
+    retryBtn.type = "button";
+    retryBtn.className = "retry-btn";
+    retryBtn.title = "Réessayer";
+    retryBtn.innerHTML = RETRY_ICON_SVG;
+    actions.appendChild(retryBtn);
+  }
+
+  retryBtn.onclick = () => {
+    if (state.loading || !state.lastUserPrompt) return;
+    retryAnswer(msgEl);
   };
 }
 
 function addMessage(role, text, { isError = false, withTyping = false } = {}) {
+  hideEmptyState();
+
   const fragment = els.tpl.content.cloneNode(true);
   const msgEl = fragment.querySelector(".msg");
   const bubbleEl = fragment.querySelector(".bubble");
+  const avatarEl = fragment.querySelector(".avatar");
 
   msgEl.classList.add(role);
   if (isError) msgEl.classList.add("error");
+
+  // Set avatar content
+  if (role === "assistant") {
+    avatarEl.innerHTML = '<img src="/static/chatbot/franprix.png" alt="Assistant" />';
+  } else if (role === "user") {
+    avatarEl.textContent = "VOUS";
+  }
 
   if (withTyping) {
     bubbleEl.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
@@ -130,17 +207,16 @@ function addMessage(role, text, { isError = false, withTyping = false } = {}) {
     state.pendingTypingId = crypto.randomUUID();
     msgEl.dataset.typingId = state.pendingTypingId;
   } else {
-    // Use innerHTML for markdown support
     bubbleEl.innerHTML = parseAndCleanText(text);
-    ensureCopyButton(msgEl, text);
+    ensureActionButtons(msgEl, text);
   }
 
-  els.panel.appendChild(fragment);
+  els.panelInner.appendChild(fragment);
   scrollToBottom();
 }
 
 function replaceTypingWithText(text, isError = false) {
-  const typingNode = [...els.panel.querySelectorAll(".msg[data-typing='1']")].pop();
+  const typingNode = [...els.panelInner.querySelectorAll(".msg[data-typing='1']")].pop();
   if (!typingNode) {
     addMessage("assistant", text, { isError });
     return;
@@ -149,9 +225,8 @@ function replaceTypingWithText(text, isError = false) {
   typingNode.dataset.typing = "0";
   if (isError) typingNode.classList.add("error");
   const bubble = typingNode.querySelector(".bubble");
-  // Use innerHTML for markdown support
   bubble.innerHTML = parseAndCleanText(text);
-  ensureCopyButton(typingNode, text);
+  ensureActionButtons(typingNode, text);
   scrollToBottom();
 }
 
@@ -176,14 +251,21 @@ function formatDate(value) {
   }
 }
 
+/* ---------- API Calls ---------- */
+
 async function fetchHealth() {
   try {
     const res = await fetch("/api/health");
     if (!res.ok) throw new Error("API indisponible");
     const data = await res.json();
-    els.status.textContent = data.ok ? "API connectée" : "API indisponible";
+    const isOnline = !!data.ok;
+    els.status.textContent = isOnline ? "API connectée" : "API indisponible";
+    els.statusDot.classList.toggle("online", isOnline);
+    els.statusDot.classList.toggle("offline", !isOnline);
   } catch {
     els.status.textContent = "API indisponible";
+    els.statusDot.classList.remove("online");
+    els.statusDot.classList.add("offline");
   }
 }
 
@@ -192,11 +274,11 @@ async function fetchKbInfo() {
     const res = await fetch("/api/kb");
     if (!res.ok) throw new Error("Impossible de charger la base documentaire");
     const data = await res.json();
-    els.pdfCount.textContent = `${data.pdf_count} documents indexés`;
+    els.pdfCount.textContent = `${data.pdf_count} documents`;
     els.lastUpdate.textContent = formatDate(data.latest_update);
   } catch (err) {
-    els.pdfCount.textContent = "Erreur de chargement";
-    els.lastUpdate.textContent = "Erreur de chargement";
+    els.pdfCount.textContent = "Erreur";
+    els.lastUpdate.textContent = "Erreur";
     addMessage("assistant", err.message || "Erreur lors du chargement des métadonnées.", { isError: true });
   }
 }
@@ -204,7 +286,7 @@ async function fetchKbInfo() {
 async function reindex() {
   if (state.loading) return;
   setLoading(true);
-  addMessage("assistant", "Réindexation en cours...", { withTyping: true });
+  addMessage("assistant", "Réindexation en cours…", { withTyping: true });
 
   try {
     const res = await fetch("/api/reindex", { method: "POST" });
@@ -223,6 +305,8 @@ async function sendMessage(message) {
   if (state.loading) return;
   const clean = message.trim();
   if (!clean) return;
+
+  state.lastUserPrompt = clean;
 
   addMessage("user", clean);
   addMessage("assistant", "", { withTyping: true });
@@ -254,6 +338,74 @@ async function sendMessage(message) {
   }
 }
 
+async function retryAnswer(assistantMsgEl) {
+  if (state.loading || !state.lastUserPrompt) return;
+
+  // Replace the current assistant message content with typing indicator
+  const bubble = assistantMsgEl.querySelector(".bubble");
+  bubble.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
+  assistantMsgEl.dataset.typing = "1";
+  assistantMsgEl.classList.remove("error");
+
+  // Remove existing action buttons during retry
+  const actions = assistantMsgEl.querySelector(".msg-actions");
+  if (actions) actions.remove();
+
+  setLoading(true);
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: state.lastUserPrompt,
+        session_id: state.sessionId,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error("Le serveur a retourné une erreur. Veuillez réessayer.");
+    }
+
+    const data = await res.json();
+    state.sessionId = data.session_id;
+    const reply = data.reply || "Je n'ai pas pu générer de réponse.";
+
+    assistantMsgEl.dataset.typing = "0";
+    bubble.innerHTML = parseAndCleanText(reply);
+    ensureActionButtons(assistantMsgEl, reply);
+  } catch (err) {
+    assistantMsgEl.dataset.typing = "0";
+    assistantMsgEl.classList.add("error");
+    const errMsg = err.message || "Erreur réseau pendant l'envoi du message.";
+    bubble.innerHTML = parseAndCleanText(errMsg);
+    ensureActionButtons(assistantMsgEl, errMsg);
+  } finally {
+    setLoading(false);
+    scrollToBottom();
+    els.input.focus();
+  }
+}
+
+/* ---------- New Chat ---------- */
+
+function startNewChat() {
+  state.sessionId = null;
+  state.chatStarted = false;
+
+  // Clear all messages
+  const msgs = els.panelInner.querySelectorAll(".msg");
+  msgs.forEach((m) => m.remove());
+
+  // Show empty state
+  showEmptyState();
+
+  closeSidebar();
+  els.input.focus();
+}
+
+/* ---------- Event Binding ---------- */
+
 function bindEvents() {
   els.form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -272,24 +424,36 @@ function bindEvents() {
     }
   });
 
-  document.querySelectorAll(".chip").forEach((chip) => {
-    chip.addEventListener("click", () => {
-      const prompt = chip.dataset.prompt || "";
+  // Suggestion cards (chips replacement)
+  document.querySelectorAll(".suggestion-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      const prompt = card.dataset.prompt || "";
       els.input.value = prompt;
       autoResizeInput();
       els.form.requestSubmit();
     });
   });
 
+  // Reindex
   els.reindexBtn.addEventListener("click", reindex);
+
+  // Sidebar toggle (mobile)
+  if (els.menuBtn) {
+    els.menuBtn.addEventListener("click", openSidebar);
+  }
+  if (els.sidebarOverlay) {
+    els.sidebarOverlay.addEventListener("click", closeSidebar);
+  }
+
+  // New chat
+  if (els.newChatBtn) {
+    els.newChatBtn.addEventListener("click", startNewChat);
+  }
 }
 
-async function init() {
-  addMessage(
-    "assistant",
-    "Bonjour. Je suis votre assistant documentaire. Posez votre question, je répondrai à partir de ma base documentaire."
-  );
+/* ---------- Init ---------- */
 
+async function init() {
   bindEvents();
   autoResizeInput();
   await Promise.all([fetchHealth(), fetchKbInfo()]);

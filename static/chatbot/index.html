@@ -5,71 +5,191 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Assistant Documentaire Franprix</title>
+  <meta name="description"
+    content="Assistant IA interne — Réponses fiables basées sur la base documentaire Franprix." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap"
-    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/chatbot/styles.css" />
 </head>
 
 <body>
-  <div class="noise-layer" aria-hidden="true"></div>
-  <div class="bg-shape shape-a" aria-hidden="true"></div>
-  <div class="bg-shape shape-b" aria-hidden="true"></div>
+  <!-- Sidebar Overlay (mobile) -->
+  <div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
 
-  <main class="app-shell">
-    <header class="topbar">
-      <div class="brand-wrap">
-        <div class="brand-logo-wrap">
-          <img src="/static/chatbot/franprix.png" alt="Logo Franprix" class="brand-logo" />
+  <div class="app-layout">
+    <!-- ===== SIDEBAR ===== -->
+    <aside id="sidebar" class="sidebar" role="navigation" aria-label="Menu latéral">
+      <div class="sidebar-header">
+        <div class="brand-block">
+          <div class="brand-logo-frame">
+            <img src="/static/chatbot/franprix.png" alt="Logo Franprix" />
+          </div>
+          <div class="brand-text">
+            <h1>Assistant Documentaire</h1>
+            <span class="brand-subtitle">Assistant IA interne</span>
+          </div>
         </div>
-        <div class="brand-copy">
-          <span class="brand-eyebrow">Assistant IA interne</span>
-          <h1>Assistant Documentaire</h1>
-          <p>Réponses fiables basées sur la base documentaire</p>
+
+        <button id="newChatBtn" class="new-chat-btn" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Nouvelle conversation
+        </button>
+      </div>
+
+      <div class="sidebar-body">
+        <!-- Status -->
+        <div class="status-indicator">
+          <span id="statusDot" class="status-dot"></span>
+          <span id="apiStatus" class="status-text">Connexion en cours…</span>
         </div>
+
+        <!-- Knowledge Base Info -->
+        <p class="sidebar-section-title">Base documentaire</p>
+        <ul class="info-list">
+          <li class="info-item">
+            <div class="info-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+            </div>
+            <div class="info-content">
+              <span class="info-label">Documents indexés</span>
+              <span id="pdfCount" class="info-value">Chargement…</span>
+            </div>
+          </li>
+          <li class="info-item">
+            <div class="info-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </div>
+            <div class="info-content">
+              <span class="info-label">Dernière mise à jour</span>
+              <span id="lastUpdate" class="info-value">Chargement…</span>
+            </div>
+          </li>
+        </ul>
       </div>
 
-      <div class="status-wrap">
-        <span id="apiStatus" class="status-pill">Connexion en cours</span>
-        <button id="reindexBtn" class="reindex-btn" type="button">Réindexer la base</button>
+      <div class="sidebar-footer">
+        <button id="reindexBtn" class="reindex-btn" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10" />
+            <polyline points="1 20 1 14 7 14" />
+            <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+          </svg>
+          Réindexer la base
+        </button>
       </div>
-    </header>
+    </aside>
 
-    <section class="meta-grid">
-      <article class="meta-card">
-        <p class="meta-label">Base documentaire</p>
-        <p id="pdfCount" class="meta-value">Chargement...</p>
-      </article>
-      <article class="meta-card">
-        <p class="meta-label">Dernière mise à jour</p>
-        <p id="lastUpdate" class="meta-value">Chargement...</p>
-      </article>
-    </section>
-
-    <section id="chatPanel" class="chat-panel" aria-live="polite"></section>
-
-    <section class="composer-panel">
-      <div class="quick-actions">
-        <button class="chip" data-prompt="Quels sont les points de vigilance IAGen à connaître ?" type="button">Points
-          de vigilance IAGen</button>
-        <button class="chip" data-prompt="Quels sont les points forts IAGen mentionnés dans les documents ?"
-          type="button">Points forts IAGen</button>
-        <button class="chip" data-prompt="Quelles sont les stratégies fondamentales de prompting ?"
-          type="button">Stratégies de prompting</button>
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="main-content">
+      <!-- Mobile Top Bar -->
+      <div class="mobile-topbar">
+        <button id="menuBtn" class="hamburger-btn" type="button" aria-label="Ouvrir le menu">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+        <span class="mobile-title">Assistant Documentaire</span>
       </div>
 
-      <form id="chatForm" class="composer" autocomplete="off">
-        <label for="userInput" class="sr-only">Votre message</label>
-        <textarea id="userInput" rows="1" maxlength="3000" placeholder="Posez votre question..."></textarea>
-        <button id="sendBtn" type="submit">Envoyer</button>
-      </form>
+      <!-- Chat Messages -->
+      <section id="chatPanel" class="chat-panel" aria-live="polite">
+        <div class="chat-panel-inner">
+          <!-- Empty state (shown until first message) -->
+          <div id="emptyState" class="empty-state">
+            <div class="empty-state-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            </div>
+            <h2>Bonjour, comment puis-je vous aider ?</h2>
+            <p>Je réponds exclusivement à partir des documents indexés dans la base documentaire.</p>
 
-      <p class="helper">L'assistant répond exclusivement à partir des documents indexés.</p>
-    </section>
-  </main>
+            <div class="suggestion-grid">
+              <button class="suggestion-card" data-prompt="Quels sont les points de vigilance IAGen à connaître ?"
+                type="button">
+                <div class="suggestion-card-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </div>
+                <span class="suggestion-card-title">Points de vigilance IAGen</span>
+                <span class="suggestion-card-desc">Découvrir les points critiques à surveiller</span>
+              </button>
 
+              <button class="suggestion-card"
+                data-prompt="Quels sont les points forts IAGen mentionnés dans les documents ?" type="button">
+                <div class="suggestion-card-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                </div>
+                <span class="suggestion-card-title">Points forts IAGen</span>
+                <span class="suggestion-card-desc">Explorer les avantages mis en avant</span>
+              </button>
+
+              <button class="suggestion-card" data-prompt="Quelles sont les stratégies fondamentales de prompting ?"
+                type="button">
+                <div class="suggestion-card-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </div>
+                <span class="suggestion-card-title">Stratégies de prompting</span>
+                <span class="suggestion-card-desc">Apprendre les fondamentaux du prompting</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Composer -->
+      <section class="composer-panel">
+        <div class="composer-wrapper">
+          <form id="chatForm" class="composer" autocomplete="off">
+            <label for="userInput" class="sr-only">Votre message</label>
+            <textarea id="userInput" rows="1" maxlength="3000" placeholder="Posez votre question…"></textarea>
+            <button id="sendBtn" type="submit" aria-label="Envoyer">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+            </button>
+          </form>
+          <p class="helper">L'assistant répond exclusivement à partir des documents indexés.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Message Template -->
   <template id="messageTemplate">
     <article class="msg">
       <div class="avatar"></div>
