@@ -12,9 +12,10 @@ from dotenv import load_dotenv
 
 # Load env vars before checking for Langfuse keys
 load_dotenv(override=True)
+import json
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -25,6 +26,7 @@ from agents import (
     set_default_openai_client,
     set_tracing_disabled,
 )
+from agents.stream_events import RawResponsesStreamEvent
 # Conditional Langfuse Import
 if os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY"):
     try:
@@ -265,6 +267,56 @@ async def chat(payload: ChatRequest) -> ChatResponse:
     session_id = payload.session_id or make_session_id()
     reply = await run_chat(message, session_id)
     return ChatResponse(session_id=session_id, reply=reply)
+
+
+@app.post("/api/chat/stream")
+async def chat_stream(payload: ChatRequest):
+    """SSE streaming endpoint — sends text deltas as they arrive from the LLM."""
+    message = payload.message.strip()
+    session_id = payload.session_id or make_session_id()
+
+    if not message:
+        async def empty_gen():
+            yield f"data: {json.dumps({'session_id': session_id, 'delta': 'Veuillez saisir une question avant d\'envoyer.'})}\n\n"
+            yield "data: [DONE]\n\n"
+        return StreamingResponse(empty_gen(), media_type="text/event-stream")
+
+    async def event_generator():
+        # Send session_id first so the frontend can track it
+        yield f"data: {json.dumps({'session_id': session_id, 'type': 'session'})}\n\n"
+
+        _set_active_session_id(session_id)
+        session = SQLiteSession(session_id=session_id, db_path=DB_PATH)
+
+        try:
+            result = Runner.run_streamed(CHAT_AGENT, message, session=session)
+
+            async for event in result.stream_events():
+                if isinstance(event, RawResponsesStreamEvent):
+                    raw = event.data
+                    ev_type = getattr(raw, "type", "")
+                    debug_print(f"[STREAM] event type={ev_type}")
+                    if ev_type == "response.output_text.delta":
+                        delta_text = getattr(raw, "delta", "")
+                        if delta_text:
+                            yield f"data: {json.dumps({'delta': delta_text})}\n\n"
+
+            yield "data: [DONE]\n\n"
+
+        except Exception as exc:
+            debug_print(f"Stream error: {type(exc).__name__}: {exc}")
+            yield f"data: {json.dumps({'error': 'Désolé, une erreur technique est survenue. Veuillez réessayer.'})}\n\n"
+            yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.get("/")

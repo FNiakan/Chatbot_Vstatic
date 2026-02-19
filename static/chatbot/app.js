@@ -301,6 +301,80 @@ async function reindex() {
   }
 }
 
+async function streamFromSSE(message, sessionId, bubbleEl, msgEl) {
+  /**
+   * Shared helper: streams text deltas from /api/chat/stream into bubbleEl.
+   * Returns the full accumulated text when done.
+   */
+  const res = await fetch("/api/chat/stream", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, session_id: sessionId }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Le serveur a retourné une erreur. Veuillez réessayer.");
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let accumulated = "";
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+
+    // Process complete SSE lines
+    const lines = buffer.split("\n");
+    buffer = lines.pop(); // keep incomplete line in buffer
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data: ")) continue;
+
+      const payload = trimmed.slice(6);
+      if (payload === "[DONE]") continue;
+
+      try {
+        const data = JSON.parse(payload);
+
+        // Session ID event
+        if (data.type === "session" && data.session_id) {
+          state.sessionId = data.session_id;
+          continue;
+        }
+
+        // Error event
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        // Text delta — append to bubble
+        if (data.delta) {
+          accumulated += data.delta;
+
+          // Show raw text during streaming (fast, no re-parse lag)
+          // Remove typing indicator on first delta
+          if (msgEl.dataset.typing === "1") {
+            msgEl.dataset.typing = "0";
+          }
+          bubbleEl.innerHTML = parseAndCleanText(accumulated);
+          scrollToBottom();
+        }
+      } catch (parseErr) {
+        if (parseErr.message && !parseErr.message.includes("JSON")) {
+          throw parseErr; // Re-throw error events
+        }
+      }
+    }
+  }
+
+  return accumulated;
+}
+
 async function sendMessage(message) {
   if (state.loading) return;
   const clean = message.trim();
@@ -313,27 +387,42 @@ async function sendMessage(message) {
 
   setLoading(true);
 
+  // Find the typing message bubble
+  const typingNode = [...els.panelInner.querySelectorAll(".msg[data-typing='1']")].pop();
+  const bubble = typingNode ? typingNode.querySelector(".bubble") : null;
+
   try {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: clean,
-        session_id: state.sessionId,
-      }),
-    });
-
-    if (!res.ok) {
-      throw new Error("Le serveur a retourné une erreur. Veuillez réessayer.");
+    if (typingNode && bubble) {
+      const fullText = await streamFromSSE(clean, state.sessionId, bubble, typingNode);
+      // Final markdown re-render + action buttons
+      const finalText = fullText || "Je n'ai pas pu générer de réponse.";
+      bubble.innerHTML = parseAndCleanText(finalText);
+      ensureActionButtons(typingNode, finalText);
+    } else {
+      // Fallback to non-streaming
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: clean, session_id: state.sessionId }),
+      });
+      if (!res.ok) throw new Error("Le serveur a retourné une erreur.");
+      const data = await res.json();
+      state.sessionId = data.session_id;
+      replaceTypingWithText(data.reply || "Je n'ai pas pu générer de réponse.");
     }
-
-    const data = await res.json();
-    state.sessionId = data.session_id;
-    replaceTypingWithText(data.reply || "Je n'ai pas pu générer de réponse.");
   } catch (err) {
-    replaceTypingWithText(err.message || "Erreur réseau pendant l'envoi du message.", true);
+    const errMsg = err.message || "Erreur réseau pendant l'envoi du message.";
+    if (typingNode) {
+      typingNode.dataset.typing = "0";
+      typingNode.classList.add("error");
+      bubble.innerHTML = parseAndCleanText(errMsg);
+      ensureActionButtons(typingNode, errMsg);
+    } else {
+      replaceTypingWithText(errMsg, true);
+    }
   } finally {
     setLoading(false);
+    scrollToBottom();
     els.input.focus();
   }
 }
@@ -354,22 +443,8 @@ async function retryAnswer(assistantMsgEl) {
   setLoading(true);
 
   try {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: state.lastUserPrompt,
-        session_id: state.sessionId,
-      }),
-    });
-
-    if (!res.ok) {
-      throw new Error("Le serveur a retourné une erreur. Veuillez réessayer.");
-    }
-
-    const data = await res.json();
-    state.sessionId = data.session_id;
-    const reply = data.reply || "Je n'ai pas pu générer de réponse.";
+    const fullText = await streamFromSSE(state.lastUserPrompt, state.sessionId, bubble, assistantMsgEl);
+    const reply = fullText || "Je n'ai pas pu générer de réponse.";
 
     assistantMsgEl.dataset.typing = "0";
     bubble.innerHTML = parseAndCleanText(reply);
