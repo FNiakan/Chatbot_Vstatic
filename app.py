@@ -27,6 +27,7 @@ from agents import (
     set_tracing_disabled,
 )
 from agents.stream_events import RawResponsesStreamEvent
+
 # Conditional Langfuse Import
 if os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY"):
     try:
@@ -78,9 +79,6 @@ os.environ["no_proxy"] = "localhost,127.0.0.1"
 os.environ["OPENAI_AGENTS_DISABLE_TRACING"] = "1"
 
 
-#  Env / model client 
-#  Env / model client 
-# load_dotenv(override=True)  # Moved to top
 
 AZURE_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "").strip()
 AZURE_KEY = os.getenv("AZURE_OPENAI_API_KEY", "").strip()
