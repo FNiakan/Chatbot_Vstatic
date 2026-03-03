@@ -146,10 +146,23 @@ async def pdf_qa(question: str, k: int = 6) -> str:
 
 pdf_qa_tool = function_tool(pdf_qa)
 
+
+async def list_available_pdfs() -> str:
+    """List all PDF documents currently indexed in the database.
+    Returns a formatted list of PDF filenames available for querying."""
+    pdf_paths = sorted(SOURCE_DIR.rglob("*.pdf"))
+    if not pdf_paths:
+        return "No PDF documents are currently available in the database."
+    names = [p.stem for p in pdf_paths]
+    return "Available PDF documents:\n" + "\n".join(f"- {name}" for name in names)
+
+
+list_available_pdfs_tool = function_tool(list_available_pdfs)
+
 CHAT_AGENT = Agent(
     name="Conversation Agent",
     model=OpenAIChatCompletionsModel(model=CHAT_DEPLOYMENT, openai_client=azure_client),
-    tools=[pdf_qa_tool],
+    tools=[pdf_qa_tool, list_available_pdfs_tool],
     instructions=chat_instruction(),
 )
 

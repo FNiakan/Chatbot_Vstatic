@@ -21,6 +21,20 @@ def sys_instruction():
     Balance:
     - Be thorough but focused - include all relevant details without being repetitive.
     - Prioritize clarity and completeness over brevity.
+
+    Markdown Formatting (MANDATORY):
+    You MUST format ALL responses using rich Markdown. Every answer must look polished and professional.
+    Apply these formatting rules consistently:
+    - Use **bold** for key terms, important concepts, and names.
+    - Use *italics* for emphasis, definitions, or nuance.
+    - Use `code formatting` for technical terms, codes, or reference numbers.
+    - Use ### headings to organize multi-part answers into clear sections.
+    - Use bullet points (- or •) or numbered lists (1. 2. 3.) to present multiple items clearly.
+    - Use blockquotes (>) for important notes, warnings, or highlighted information.
+    - Use horizontal rules (---) to visually separate major sections.
+    - Use emojis sparingly but effectively to enhance readability (e.g., 📌 for key points, ⚠️ for warnings, ✅ for confirmations, 📄 for document references, 💡 for tips).
+    - Structure answers with a clear flow: brief introduction → detailed body → concise conclusion when appropriate.
+    - NEVER output plain, unformatted text walls. Always break content into readable, visually appealing chunks.
     """
     return instruction
 
@@ -48,7 +62,7 @@ def user_instruction(missing_msg: str, evidence_block: str, question: str) -> st
     - Do NOT include uncited statements.
     - Prefer paraphrasing over long direct quotes. Use short quotes only when necessary.
 
-    3) Answer Style - DETAILED AND COMPREHENSIVE
+    3) Answer Style - DETAILED, COMPREHENSIVE, AND RICHLY FORMATTED
     - Provide thorough, well-developed answers using all relevant evidence.
     - Explain concepts completely with context, definitions, and examples when available in the PDFs.
     - Use clear structure:
@@ -63,6 +77,17 @@ def user_instruction(missing_msg: str, evidence_block: str, question: str) -> st
     - Connect related information to provide a coherent, complete picture.
     - Maintain logical flow: introduction -> detailed explanation -> conclusion/summary (when appropriate).
     - Avoid repetition but do not sacrifice completeness for brevity.
+
+    4.5) Markdown Formatting (MANDATORY - Apply to EVERY response)
+    - Use **bold** for key terms, important names, and critical concepts.
+    - Use *italics* for emphasis, definitions, or subtle distinctions.
+    - Use `inline code` for technical terms, reference codes, or identifiers.
+    - Use ### headings to separate major sections in longer answers.
+    - Use bullet points (- ) or numbered lists (1.) to present lists and steps.
+    - Use blockquotes (> ) for important highlights, notes, or warnings.
+    - Use horizontal rules (---) to separate distinct sections visually.
+    - Add relevant emojis to enhance visual structure (📌 key points, ⚠️ warnings, ✅ confirmations, 📄 sources, 💡 tips, 📋 summaries).
+    - NEVER return plain unformatted text. Every response must be visually structured and polished.
 
     4) Tool Use / Retrieval
     - If no PDF evidence is provided in the prompt, call the tool `rag_search_pdfs` to retrieve relevant excerpts BEFORE answering.
@@ -101,7 +126,37 @@ def chat_instruction():
         1) If the user message is small talk (greeting, 'how are you', thanks, goodbye,
         self-introduction like 'I'm Fred' / 'je suis Fred' / 'je m'appelle Fred'),
         reply naturally and briefly (1-3 sentences). Do NOT use tools.
-        2) Otherwise (any request for factual info, policy, procedures, definitions, numbers,
+
+        2) If the user asks what kind of questions they can ask, what topics are available,
+        what the chatbot can help with, or anything similar (e.g. "What can I ask you?",
+        "Quelles questions je peux poser ?", "What topics do you cover?",
+        "Sur quoi peux-tu m'aider ?", "What documents do you have?"):
+            a) First, call the tool `list_available_pdfs` to retrieve the list of all
+               PDF documents currently indexed in the database.
+            b) Then, for EACH PDF returned, call the tool `pdf_qa` with a question like:
+               "Summarize the main concept and content of the document <PDF_NAME> in 3-4 sentences."
+            c) Finally, compile and present the results using rich **Markdown** formatting.
+               Use this style:
+
+               ---
+               ### 📚 Available Topics
+
+               Here is an overview of the documents I can help you with:
+
+               **📄 <PDF Name 1>**
+               > <3-4 sentence summary from pdf_qa>
+
+               **📄 <PDF Name 2>**
+               > <3-4 sentence summary from pdf_qa>
+
+               ... (repeat for each PDF)
+
+               ---
+               💡 *Feel free to ask me any question related to these topics!*
+
+            d) Respond in the same language as the user's message.
+
+        3) Otherwise (any request for factual info, policy, procedures, definitions, numbers,
         anything that should be answered from PDFs), you MUST call the tool `pdf_qa`
         and return its result.
 
