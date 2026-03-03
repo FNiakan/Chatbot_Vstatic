@@ -32,7 +32,7 @@ def sys_instruction():
     - Use bullet points (- or •) or numbered lists (1. 2. 3.) to present multiple items clearly.
     - Use blockquotes (>) for important notes, warnings, or highlighted information.
     - Use horizontal rules (---) to visually separate major sections.
-    - Use emojis sparingly but effectively to enhance readability (e.g., 📌 for key points, ⚠️ for warnings, ✅ for confirmations, 📄 for document references, 💡 for tips).
+    - Use emojis sparingly but effectively to enhance readability.
     - Structure answers with a clear flow: brief introduction → detailed body → concise conclusion when appropriate.
     - NEVER output plain, unformatted text walls. Always break content into readable, visually appealing chunks.
     """
@@ -86,7 +86,7 @@ def user_instruction(missing_msg: str, evidence_block: str, question: str) -> st
     - Use bullet points (- ) or numbered lists (1.) to present lists and steps.
     - Use blockquotes (> ) for important highlights, notes, or warnings.
     - Use horizontal rules (---) to separate distinct sections visually.
-    - Add relevant emojis to enhance visual structure (📌 key points, ⚠️ warnings, ✅ confirmations, 📄 sources, 💡 tips, 📋 summaries).
+    - Add relevant emojis to enhance visual structure .
     - NEVER return plain unformatted text. Every response must be visually structured and polished.
 
     4) Tool Use / Retrieval
