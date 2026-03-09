@@ -64,6 +64,13 @@ Variables optionnelles :
 - `AZURE_OPENAI_EMBED_API_VERSION`
 - `ALLOWED_ORIGINS`
 
+Variables pour le traçage Langfuse (Optionnel / Volontaire) :
+Ces variables sont optionnelles. Le code fonctionnera normalement si vous ne les mettez pas dans le fichier `.env`, mais sans elles, vous ne pourrez pas tracer le chatbot via Langfuse.
+
+- `LANGFUSE_SECRET_KEY`
+- `LANGFUSE_PUBLIC_KEY`
+- `LANGFUSE_HOST`
+
 ## Lancer en local
 
 1. Installer les dépendances (exemple avec `uv` ou `pip`).
