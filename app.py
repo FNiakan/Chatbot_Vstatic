@@ -103,7 +103,7 @@ rag = PdfRagTools(SOURCE_DIR, CHROMA_DIR, MANIFEST_PATH, debug=True)
 index_pdfs_tool = function_tool(rag.index_pdfs_impl)
 rag_search_pdfs_tool = function_tool(rag.rag_search_pdfs_impl)
 
-CHAT_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT_CHAT", "gpt-4.1").strip()
+CHAT_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT_CHAT", "").strip()
 QA_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT_QA", CHAT_DEPLOYMENT).strip()
 
 QA_AGENT = Agent(
