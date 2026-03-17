@@ -78,7 +78,7 @@ Ces variables sont optionnelles. Le code fonctionnera normalement si vous ne les
 3. Démarrer l'API :
 
 ```bash
-uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app:app --host 127.0.0.14 --port 8000 --reload
 ```
 
 Puis ouvrir :
